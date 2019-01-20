@@ -1,0 +1,57 @@
+version: '3.5'
+services:
+  traefik:
+    image: traefik
+    environment:
+      - OVH_ENDPOINT=ovh-eu
+      - OVH_APPLICATION_KEY=xxx
+      - OVH_APPLICATION_SECRET=xxx
+      - OVH_CONSUMER_KEY=xxx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_conf:/etc/traefik
+    networks:
+      - traefik_network
+    command: >
+            --docker
+            --docker.swarmMode
+            --docker.domain=arnaud-pc.fr
+            --docker.watch
+            --api
+            --entryPoints='Name:http Address::80 Redirect.EntryPoint:https'
+            --entryPoints='Name:https Address::443 TLS'
+            --defaultentrypoints=http,https
+            --acme
+            --acme.storage=/etc/traefik/acme/acme.json
+            --acme.email=worldtocraft@gmail.com
+            --acme.entryPoint=https
+            --acme.onhostrule
+            --acme.dnschallenge
+            --acme.dnschallenge.provider=ovh
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.frontend.auth.basic.usersFile=/etc/traefik/.htpasswd"
+        - "traefik.frontend.rule=Host:traefik.cloud.arnaud-pc.fr"
+        - "traefik.port=8080"
+        - "traefik.docker.network=dmz"
+        - "traefik.passHostHeader=true"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.backend.loadbalancer.method=drr"
+        - "traefik.enable=true"
+
+networks:
+  traefik_network:
+    name: dmz
+    driver: overlay
+    attachable: true
+
+volumes:
+  traefik_conf:
+    driver: convoy

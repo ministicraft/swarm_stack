@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  web:
+    image: gitea/gitea:latest
+    depends_on:
+      - db
+    environment:
+      - TZ=Europe/Paris
+      - PUID=1000
+      - PGID=1000
+      - DB_TYPE=postgres
+      - DB_HOST=db:5432
+      - DB_NAME=xxx
+      - DB_USER=xxx
+      - DB_PASSWD=xxx
+    volumes:
+      - gitea_data:/data
+    ports:
+      - "10022:22"
+    deploy:
+      labels:
+        - "traefik.port=3000"
+        - "traefik.frontend.rule=Host:git.cloud.arnaud-pc.fr"
+        - "traefik.docker.network=dmz"
+        - "traefik.passHostHeader=true"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.backend.loadbalancer.method=drr"
+        - "traefik.enable=true"
+    networks:
+      - dmz
+      - gitea
+
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=xxx
+      - POSTGRES_PASSWORD=xxx
+      - POSTGRES_DB=xxx
+    volumes:
+      - postgres_gitea_data:/var/lib/postgresql/data
+    networks:
+      - gitea
+
+networks:
+  gitea:
+    driver: overlay
+  dmz:
+    external:
+      name: dmz
+
+volumes:
+  gitea_data:
+    driver: convoy
+  postgres_gitea_data:
+    driver: convoy

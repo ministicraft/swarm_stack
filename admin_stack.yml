@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  reverse_proxy_admin:
+    image: nginx
+    volumes:
+      - nginx_router:/etc/nginx/
+    networks:
+      - dmz
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.frontend.rule=Host:admin.arnaud-pc.fr"
+        - "traefik.port=80"
+        - "traefik.docker.network=dmz"
+        - "traefik.passHostHeader=true"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.backend.loadbalancer.method=drr"
+        - "traefik.enable=true"
+
+networks:
+  dmz:
+    external: true
+
+volumes:
+  nginx_router:
+    driver: convoy

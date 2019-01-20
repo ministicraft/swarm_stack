@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  web:
+    image: nextcloud
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_DB=xxx
+      - POSTGRES_USER=xxx
+      - POSTGRES_PASSWORD=xxx
+      - POSTGRES_HOST=db
+    volumes:
+      - /storage/:/data/
+      - nextcloud_data:/var/www/html/data/
+      - nextcloud_config:/var/www/html/config
+    networks:
+      - dmz
+      - nextcloud
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+
+      labels:
+        - "traefik.frontend.rule=Host:nextcloud.cloud.arnaud-pc.fr,cloud.arnaud-pc.fr"
+        - "traefik.port=80"
+        - "traefik.docker.network=dmz"
+        - "traefik.passHostHeader=true"
+        - "traefik.backend.loadbalancer.swarm=true"
+        - "traefik.backend.loadbalancer.method=drr"
+        - "traefik.enable=true"
+
+  db:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_USER=xxx
+      - POSTGRES_PASSWORD=xxx
+      - POSTGRES_DB=xxx
+    volumes:
+      - postgres_nextcloud_data:/var/lib/postgresql/data
+    networks:
+      - nextcloud
+    deploy:
+      mode: replicated
+      replicas: 1
+
+networks:
+  dmz:
+    external: true
+  nextcloud:
+    driver: overlay
+
+volumes:
+  nextcloud_data:
+    driver: convoy
+  nextcloud_config:
+    driver: convoy
+  postgres_nextcloud_data:
+    driver: convoy
